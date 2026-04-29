@@ -23,8 +23,12 @@ services:
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
+    # Хост-порт сдвинут с 6379, чтобы не конфликтовать с типичным
+    # системным Redis на машине разработчика. Внутри compose service
+    # доступен по адресу `redis:6379`, host-маппинг нужен только для
+    # отладки (redis-cli -p 16379).
     ports:
-      - "6379:6379"
+      - "16379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
