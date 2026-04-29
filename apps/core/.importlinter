@@ -1,0 +1,14 @@
+[importlinter]
+root_packages =
+    app
+
+# Контракт обновляется при появлении первого модуля.
+# Сейчас единственное правило — shared не должен зависеть от modules.
+
+[importlinter:contract:shared-not-depend-on-modules]
+name = shared not depend on modules
+type = forbidden
+source_modules =
+    app.shared
+forbidden_modules =
+    app.modules
