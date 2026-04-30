@@ -34,8 +34,11 @@
 
 Дополнительно:
 
-- **PostgreSQL 16** — основная БД ядра (мульти-арендный схема через
-  `organization_id`).
+- **PostgreSQL 16** — основная БД ядра. Один деплой Portal обслуживает
+  одну организацию-клиента (single-tenant per deployment, см.
+  [ADR-0009](adr/0009-single-tenant-per-deployment.md)) — изоляция между
+  клиентами обеспечивается отдельными деплоями, в БД нет колонок
+  `organization_id`/`tenant_id`.
 - **Redis 7** — кэш, сессии, broker для arq (фоновые задачи).
 - **RabbitMQ** — шина событий между сервисами.
 - **MinIO / Selectel S3** — объектное хранилище.
@@ -47,11 +50,12 @@
 | [0001](adr/0001-modular-monolith-for-core.md) | Ядро — модульный монолит, не микросервисы |
 | [0002](adr/0002-connectors-as-separate-services.md) | Коннекторы и notifier — отдельные сервисы |
 | [0003](adr/0003-canonical-models-as-integration-contract.md) | Канонические модели — единственный источник истины |
-| [0004](adr/0004-multi-tenancy-via-organization-id.md) | Multi-tenancy через `organization_id` |
+| [0004](adr/0004-multi-tenancy-via-organization-id.md) | ~~Multi-tenancy через `organization_id`~~ — **устарело**, заменено на 0009 |
 | [0005](adr/0005-rabbitmq-as-event-bus.md) | RabbitMQ как шина событий |
 | [0006](adr/0006-two-repo-split.md) | Разделение проекта на backend и frontend репозитории |
 | [0007](adr/0007-clean-architecture.md) | Clean Architecture внутри Python-сервисов |
 | [0008](adr/0008-oop-first-with-functional-routes.md) | ООП-first для бизнес-кода, функции для FastAPI роутов |
+| [0009](adr/0009-single-tenant-per-deployment.md) | Single-tenant per deployment (один инстанс — одна организация) |
 
 ## Правила, не подлежащие переоткрытию без ADR
 
@@ -59,8 +63,10 @@
    отдельный сервис» — через новый ADR.
 2. **Канон — единственный источник истины.** Внутрь ядра не попадают
    данные «в формате внешней системы».
-3. **Multi-tenancy через `organization_id`.** Любая таблица бизнес-данных
-   несёт колонку `organization_id` и фильтруется по ней.
+3. **Single-tenant per deployment.** Один инстанс обслуживает одну
+   организацию-клиента. В БД нет `organization_id`/`tenant_id`. Сущность
+   `Organization` остаётся, но в таблице ровно одна строка — профиль
+   компании-владельца инстанса.
 4. **Event-driven между сервисами, sync внутри сервиса.** Между ядром и
    коннекторами — только события. Внутри сервиса — обычные вызовы.
 5. **Sync API — только для чтения.** Изменения во внешних системах ядро
