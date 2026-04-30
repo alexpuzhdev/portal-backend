@@ -1,7 +1,14 @@
 # 0004. Multi-tenancy через `organization_id`
 
 Дата: 2026-04-29
-Статус: принято
+Статус: устарело
+Заменён: [0009](0009-single-tenant-per-deployment.md)
+
+> **Это решение отменено.** Бизнес-модель проекта изменилась с SaaS на
+> self-hosted / managed deployment per tenant. См. [ADR-0009](0009-single-tenant-per-deployment.md)
+> для актуального решения. Содержимое ниже сохранено как история.
+
+---
 
 ## Контекст
 
