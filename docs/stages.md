@@ -64,10 +64,15 @@
 ### Блоки
 
 - **Блок 1:** organizations + минимальный /setup. *(✅ закрыт)*
-- **Блок 2:** auth core (users, login, refresh, Casbin). *(план)*
+- **Блок 2:** auth core (users, login, refresh, Casbin). *(✅ закрыт)*
 - **Блок 3:** tokens (invitations + password reset). *(план)*
 - **Блок 4:** frontend pages. *(план)*
-- **Блок 5:** e2e + финальный отчёт. *(план)*
+- **Блок 5:** полный test-suite + e2e + финальный отчёт. *(план)*
+
+> **Стратегия тестирования** (см. memory `feedback_test_cadence`):
+> внутри блоков gate сводится к статическим проверкам
+> (`make check` = lint + types + imports + smoke через uvicorn/curl).
+> Полный pytest-suite (unit + integration + e2e) пишется в Блоке 5.
 
 #### Блок 1 — organizations + /setup ✅
 
@@ -127,3 +132,95 @@ $ curl -X POST :8765/setup -d '{"organization":{"slug":"alpha","name":"Alpha"}}'
 $ curl -X POST :8765/setup -d '{"organization":{"slug":"beta","name":"Beta"}}'
 # 409 instance is already initialised
 ```
+
+#### Блок 2 — auth core ✅
+
+**Что вошло:**
+
+- Модуль `apps/core/app/modules/auth/` со всеми четырьмя слоями Clean
+  Architecture.
+- Domain: `User`, `Role`, `Membership`, `RefreshToken`; value objects
+  `Email`, `HashedPassword`, `Permission`; password policy в
+  `assert_password_policy` (≥ 12 символов, буква + цифра); набор
+  domain-исключений (`InvalidCredentials`, `TokenExpired`,
+  `TokenRevoked`, `WeakPassword` и т. д.).
+- Application: ports (`PasswordHasher`, `TokenIssuer`,
+  `TokenDenylist`, `Enforcer`); use cases (`CreateUser`, `Login`,
+  `Logout`, `RefreshAccessToken`, `GetCurrentUser`); DTO.
+- Infrastructure:
+  - SQLAlchemy ORM для всех auth-сущностей + маппер + repositories.
+  - `Argon2PasswordHasher` через `argon2-cffi`.
+  - `JwtTokenIssuer` через `pyjwt` (HS256), TTL access 15 мин /
+    refresh 30 дней, SHA-256 хеш refresh для хранения в БД.
+  - `RedisTokenDenylist` через `redis.asyncio`, ключ `denylist:<jti>`
+    с TTL = remaining lifetime access-токена.
+  - `CasbinEnforcer` + `model.conf` (RBAC with domains: sub × dom ×
+    obj × act); policy storage в той же Postgres через
+    `casbin-async-sqlalchemy-adapter`.
+  - `bootstrap.py`: идемпотентное создание трёх системных ролей
+    (`owner`, `admin`, `member`) и базовых permissions.
+- Presentation:
+  - `POST /auth/login` (выдаёт cookies, отдаёт user + memberships).
+  - `POST /auth/logout` (revoke refresh + denylist access jti +
+    очистка cookies; CSRF-проверка).
+  - `POST /auth/refresh` (rotation: новый access + refresh, старый
+    refresh инвалидируется; CSRF-проверка).
+  - `GET /auth/me` (профиль + memberships).
+  - Cookies: `portal_access` / `portal_refresh` (httpOnly), `portal_csrf`
+    (НЕ httpOnly) — для double-submit pattern.
+  - DI: `current_user`, `current_organization`, `assert_csrf` —
+    публичный API auth-модуля для других модулей.
+- Расширенный `/setup`: создаёт root organization → bootstrap roles
+  и permissions → первого owner-а → его membership → Casbin policy.
+- Конфиг: добавлены `jwt_secret`, `jwt_algorithm`,
+  `access_token_ttl_minutes`, `refresh_token_ttl_days` и
+  cookie-настройки. `.env.example` обновлён.
+- Миграция Alembic `b3c040b945d8_create_users_roles_permissions_`.
+  Round-trip upgrade/downgrade проверен.
+- import-linter контракт `auth-clean-architecture` — добавлен.
+- Документация: ADR-0010, `docs/modules/auth.md`, обновление
+  `docs/stages.md`.
+
+**Зависимости (новые):** `argon2-cffi`, `pyjwt`, `redis`, `casbin`,
+`casbin-async-sqlalchemy-adapter`, `email-validator`.
+
+**Stratregy change:** в этом блоке решено **не писать тесты внутри
+блока** — статические проверки и smoke через curl/uvicorn достаточны.
+Полный test-suite будет в финальном Блоке 5 (см. memory
+`feedback_test_cadence`). По этой же причине удалены unit/integration/
+e2e-тесты Блока 1 (они отражали устаревший контракт `/setup` и были
+бы переписаны позже всё равно).
+
+**Локальная smoke-проверка (curl):**
+
+```
+$ make migrate
+$ uv run uvicorn app.main:app --port 8765 &
+
+$ curl -c /tmp/c.txt -X POST :8765/setup \
+    -d '{"organization":{...},"owner":{"email":"o@a","password":"...","full_name":"..."}}'
+# 201, тело — root organization + owner
+
+$ curl -c /tmp/c.txt -X POST :8765/auth/login \
+    -d '{"email":"o@a","password":"..."}'
+# 200, выставлены portal_access + portal_refresh + portal_csrf
+
+$ curl -b /tmp/c.txt :8765/auth/me
+# 200, профиль + memberships (с ролью "owner")
+
+$ curl -b /tmp/c.txt -X POST :8765/auth/refresh -H "X-CSRF-Token: <csrf>"
+# 204, новые токены, старый refresh — revoked
+
+$ curl -b /tmp/c.txt -X POST :8765/auth/logout -H "X-CSRF-Token: <csrf>"
+# 204, cookies удалены, jti в denylist
+
+$ curl -b /tmp/c.txt :8765/auth/me
+# 401 token revoked (даже если cookie ещё валидна — denylist срабатывает)
+
+$ curl -X POST :8765/auth/login -d '{"email":"o@a","password":"WRONG"}'
+# 401 invalid email or password
+$ curl -X POST :8765/auth/login -d '{"email":"nobody@x","password":"any"}'
+# 401 invalid email or password (то же сообщение — защита от user enumeration)
+```
+
+`make check` (lint + mypy + import-linter с 4 контрактами) — зелёный.

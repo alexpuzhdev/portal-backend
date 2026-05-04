@@ -8,6 +8,9 @@ from app.core.config import get_settings
 # через DeclarativeBase. Каждый новый модуль с ORM добавляется в этот
 # список. shared не зависит от modules, поэтому регистрация делается
 # здесь, в миграционной инфраструктуре.
+from app.modules.auth.infrastructure.persistence import (
+    orm as _auth_orm,  # noqa: F401
+)
 from app.modules.organizations.infrastructure.persistence import (
     orm as _organizations_orm,  # noqa: F401
 )

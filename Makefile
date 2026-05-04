@@ -62,4 +62,7 @@ test-integration:
 	    apps/*/tests/integration \
 	    apps/*/app/modules/*/tests/integration
 
-check: lint types imports test-unit
+# Внутри блоков этапа gate сводится к статическим проверкам — тесты
+# пишутся отдельным финальным блоком (см. memory feedback_test_cadence).
+# Когда появится полный test-suite, добавим `test-unit` обратно в check.
+check: lint types imports

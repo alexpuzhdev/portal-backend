@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 
+from app.modules.auth.presentation.routes import router as auth_router
 from app.modules.organizations.presentation.routes import router as organizations_router
 from app.modules.setup.presentation.routes import router as setup_router
 
@@ -42,6 +43,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok"}
 
     app.include_router(setup_router)
+    app.include_router(auth_router)
     app.include_router(organizations_router)
 
     return app

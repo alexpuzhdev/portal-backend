@@ -26,3 +26,13 @@ type = layers
 layers =
     app.modules.setup.presentation
     app.modules.setup.application
+
+[importlinter:contract:auth-clean-architecture]
+name = Clean Architecture - auth module
+type = layers
+layers =
+    app.modules.auth.presentation
+    app.modules.auth.infrastructure
+    app.modules.auth.application
+    app.modules.auth.domain
+exhaustive = false

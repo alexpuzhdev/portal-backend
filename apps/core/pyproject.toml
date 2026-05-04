@@ -15,6 +15,13 @@ dependencies = [
     "structlog>=24.4.0",
     "arq>=0.26.3",
     "aio-pika>=9.5.0",
+    # auth и RBAC
+    "argon2-cffi>=23.1.0",
+    "pyjwt>=2.10.0",
+    "redis>=5.2.0",
+    "casbin>=1.43.0",
+    "casbin-async-sqlalchemy-adapter>=1.7.0",
+    "email-validator>=2.2.0",
     "canonical-models",
     "connector-sdk",
     "event-schemas",
@@ -42,5 +49,12 @@ plugins = ["pydantic.mypy"]
 files = ["app"]
 
 [[tool.mypy.overrides]]
-module = ["aio_pika.*", "arq.*"]
+module = [
+    "aio_pika.*",
+    "arq.*",
+    "casbin",
+    "casbin.*",
+    "casbin_async_sqlalchemy_adapter",
+    "casbin_async_sqlalchemy_adapter.*",
+]
 ignore_missing_imports = true
