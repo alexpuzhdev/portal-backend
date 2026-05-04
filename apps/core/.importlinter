@@ -2,9 +2,6 @@
 root_packages =
     app
 
-# Контракт обновляется при появлении первого модуля.
-# Сейчас единственное правило — shared не должен зависеть от modules.
-
 [importlinter:contract:shared-not-depend-on-modules]
 name = shared not depend on modules
 type = forbidden
@@ -12,3 +9,20 @@ source_modules =
     app.shared
 forbidden_modules =
     app.modules
+
+[importlinter:contract:organizations-clean-architecture]
+name = Clean Architecture - organizations module
+type = layers
+layers =
+    app.modules.organizations.presentation
+    app.modules.organizations.infrastructure
+    app.modules.organizations.application
+    app.modules.organizations.domain
+exhaustive = false
+
+[importlinter:contract:setup-clean-architecture]
+name = Clean Architecture - setup module
+type = layers
+layers =
+    app.modules.setup.presentation
+    app.modules.setup.application

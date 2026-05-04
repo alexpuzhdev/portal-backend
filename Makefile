@@ -46,12 +46,20 @@ imports:
 	done
 
 test:
-	uv run pytest apps/*/tests packages/*/tests
+	uv run pytest \
+	    apps/*/tests \
+	    apps/*/app/modules/*/tests \
+	    packages/*/tests
 
 test-unit:
-	uv run pytest apps/*/tests/unit packages/*/tests
+	uv run pytest \
+	    apps/*/tests/unit \
+	    apps/*/app/modules/*/tests/unit \
+	    packages/*/tests
 
 test-integration:
-	uv run pytest apps/*/tests/integration
+	uv run pytest \
+	    apps/*/tests/integration \
+	    apps/*/app/modules/*/tests/integration
 
 check: lint types imports test-unit
