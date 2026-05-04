@@ -4,6 +4,9 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 
+from app.modules.organizations.presentation.routes import router as organizations_router
+from app.modules.setup.presentation.routes import router as setup_router
+
 from .config import Settings, get_settings
 from .logging import configure_logging
 
@@ -37,5 +40,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    app.include_router(setup_router)
+    app.include_router(organizations_router)
 
     return app

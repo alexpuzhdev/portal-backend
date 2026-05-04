@@ -3,9 +3,20 @@ from logging.config import fileConfig
 
 from alembic import context
 from app.core.config import get_settings
+
+# Импорты ORM-моделей по модулям ядра — alembic собирает их metadata
+# через DeclarativeBase. Каждый новый модуль с ORM добавляется в этот
+# список. shared не зависит от modules, поэтому регистрация делается
+# здесь, в миграционной инфраструктуре.
+from app.modules.organizations.infrastructure.persistence import (
+    orm as _organizations_orm,  # noqa: F401
+)
+from app.shared.infrastructure.db.base import Base
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+target_metadata = Base.metadata
 
 config = context.config
 
@@ -14,11 +25,6 @@ if config.config_file_name is not None:
 
 settings = get_settings()
 config.set_main_option("sqlalchemy.url", settings.database_url)
-
-# Заполнится, когда появятся ORM-модели:
-#   from app.shared.infrastructure.db.base import Base
-#   target_metadata = Base.metadata
-target_metadata = None
 
 
 def run_migrations_offline() -> None:
