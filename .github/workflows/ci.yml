@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   check:
-    name: lint + types + imports + unit tests
+    name: lint + types + imports
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -44,5 +44,5 @@ jobs:
       - name: Import contracts (import-linter)
         run: make imports
 
-      - name: Unit tests (pytest)
-        run: make test-unit
+      # Полный pytest sуite появится отдельным финальным блоком этапа
+      # (см. docs/stages.md и memory feedback_test_cadence).

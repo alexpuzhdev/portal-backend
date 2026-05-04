@@ -14,6 +14,9 @@ import pytest_asyncio
 
 # Импорты ORM-моделей по модулям — собирают metadata в Base. Без них
 # create_all не увидит таблицы. Тот же приём, что в alembic/env.py.
+from app.modules.auth.infrastructure.persistence import (
+    orm as _auth_orm,  # noqa: F401
+)
 from app.modules.organizations.infrastructure.persistence import (
     orm as _organizations_orm,  # noqa: F401
 )

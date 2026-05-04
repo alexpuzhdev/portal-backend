@@ -30,6 +30,29 @@ class Settings(BaseSettings):
     s3_secret_key: str = Field(default="portalpassword")
     s3_bucket: str = Field(default="portal")
 
+    # JWT и cookie auth (см. ADR-0010).
+    # JWT_SECRET обязателен в production — дефолт ниже работает только
+    # для разработки и тестов; запуск с этим секретом в проде должен
+    # отклоняться (см. validation в Settings.__init__ при необходимости).
+    jwt_secret: str = Field(
+        default="dev-only-secret-change-me",
+        description="HMAC secret for signing JWT tokens",
+    )
+    jwt_algorithm: str = Field(default="HS256")
+    access_token_ttl_minutes: int = Field(default=15, ge=1)
+    refresh_token_ttl_days: int = Field(default=30, ge=1)
+
+    # Cookie-настройки. На локалке и в тестах — http (secure=false).
+    # Прод-окружение должно переопределять через .env (secure=true,
+    # samesite=lax/strict, домен).
+    cookie_secure: bool = Field(default=False)
+    cookie_samesite: Literal["lax", "strict", "none"] = Field(default="lax")
+    cookie_domain: str | None = Field(default=None)
+    access_cookie_name: str = Field(default="portal_access")
+    refresh_cookie_name: str = Field(default="portal_refresh")
+    csrf_cookie_name: str = Field(default="portal_csrf")
+    csrf_header_name: str = Field(default="X-CSRF-Token")
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
